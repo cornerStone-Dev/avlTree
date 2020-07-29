@@ -1,0 +1,4 @@
+# ignored files
+bin/
+avlTree.o
+*.geany
