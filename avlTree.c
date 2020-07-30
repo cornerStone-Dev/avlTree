@@ -6,17 +6,24 @@
 #include <stdio.h>
 #endif
 #include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
 
 #include "avlTree.h"
 
-//#define CMP(x,y)  (strcmp(((const char *)x),(const char *)(y)))
-#define CMP(x,y)  (stringCompare((x),(y)))
+typedef uint8_t  u8;
+typedef int8_t   s8;
+typedef uint32_t u32;
+typedef int32_t  s32;
+typedef uint64_t u64;
+typedef int64_t  s64;
+typedef float    f32;
+typedef double   f64;
 
-#define LEFT 0
-#define RIGHT 1
+#define LEFT     0
+#define RIGHT    1
 #define NEITHER -1
+#define Balanced(n) ((n)->longer < 0)
+
+static inline s32 stringCompare(u8 *str1, u8 *str2) __attribute__((always_inline));
 
 static inline s32 stringCompare(u8 *str1, u8 *str2)
 {
@@ -34,17 +41,9 @@ static inline s32 stringCompare(u8 *str1, u8 *str2)
 	}
 }
 
-#define	STARTED 0
-#define	ENDED 1
-#define	FROM_LEFT 2
-#define	FROM_RIGHT 3
-#define	FROM_SELF 4
-
-
-#define Balanced(n) (n->longer < 0)
-
+STATIC_BUILD
 u32
-avlTreeDepth(StringTo64Node* tree, u32 depth)
+avlTreeDepth(StringToValNode* tree, u32 depth)
 {
 	u32 leftDepth=0, rightDepth=0;
 	if(tree->next[0]){
@@ -60,8 +59,9 @@ avlTreeDepth(StringTo64Node* tree, u32 depth)
 	return rightDepth+1;
 }
 
+STATIC_BUILD
 u32
-avlTreeCount(StringTo64Node* tree, u32 count)
+avlTreeCount(StringToValNode* tree, u32 count)
 {
 	if(tree->next[0]){
 		count = avlTreeCount(tree->next[0], count);
@@ -73,8 +73,8 @@ avlTreeCount(StringTo64Node* tree, u32 count)
 	return count+1;
 }
 
-StringTo64Node*
-StringTos64Tree_find(StringTo64Node* tree, u8 *target)
+StringToValNode*
+avlTree_find(StringToValNode* tree, u8 *target)
 {
 	s32 res;
 	while (tree && ((res=CMP(target, tree->key))!=0) ) {
@@ -84,18 +84,42 @@ StringTos64Tree_find(StringTo64Node* tree, u8 *target)
 	return tree;
 }
 
-
-static StringTo64Node*
-StringTos64Tree_rotate_2(StringTo64Node* *path_top, s64 dir)
+static u32 getNodeLen(u32 keyLen)
 {
-	StringTo64Node* B, *C, *D, *E;
+	// return nodeLen in bytes. Assume null termination, add 1
+	return (keyLen+1+sizeof(AvlValue)+18+7)/8*8; // round up to 8 bytes
+}
+
+static inline StringToValNode*
+makeNode(u8 *key, u32 keyLen, AvlValue val)
+{
+	u32 i=0;
+	u32 node_len = getNodeLen(keyLen);
+	StringToValNode *tree = malloc(node_len);
+	
+	if (tree) {
+		tree->next[0] = tree->next[1] = 0;
+		tree->val = val;
+		tree->longer = NEITHER;
+		tree->taken = NEITHER;
+		do{tree->key[i]=key[i];i++;}while(i<keyLen);
+		tree->key[keyLen] = 0; // null terminate
+	}
+	return tree;
+}
+
+static StringToValNode*
+avlTree_rotate_2(StringToValNode* *path_top, s64 dir)
+{
+	StringToValNode* B, *C, *D, *E;
+	s64 otherDir = 1^dir;
 	B = *path_top;
 	D = B->next[dir];
-	C = D->next[1^dir];
+	C = D->next[otherDir];
 	E = D->next[dir];
 
 	*path_top = D;
-	D->next[1^dir] = B;
+	D->next[otherDir] = B;
 	B->next[dir] = C;
 	B->longer = NEITHER;
 	D->longer = NEITHER;
@@ -103,31 +127,33 @@ StringTos64Tree_rotate_2(StringTo64Node* *path_top, s64 dir)
 }
 
 
-static StringTo64Node*
-StringTos64Tree_rotate_3(StringTo64Node* *path_top, s64 dir, s64 third)
+static StringToValNode*
+avlTree_rotate_3(StringToValNode* *path_top, s64 dir, s64 third)
 {
-	StringTo64Node* B, *F, *D, *C, *E;
+	StringToValNode* B, *F, *D, *C, *E;
+	s64 otherDir = 1^dir;
 	B = *path_top;
 	F = B->next[dir];
-	D = F->next[1^dir];
+	D = F->next[otherDir];
 	/* note: C and E can be NULL */
-	C = D->next[1^dir];
+	C = D->next[otherDir];
 	E = D->next[dir];
 	*path_top = D;
-	D->next[1^dir] = B;
+	D->next[otherDir] = B;
 	D->next[dir] = F;
 	B->next[dir] = C;
-	F->next[1^dir] = E;
+	F->next[otherDir] = E;
 	D->longer = NEITHER;
 
 	/* assume both trees are balanced */
 	B->longer = F->longer = NEITHER;
 
-	if (third == NEITHER)
-		return NULL;
+	if (third == NEITHER){
+		return 0;
+	}
 	else if (third == dir) {
 		/* E holds the insertion so B is unbalanced */ 
-		B->longer = 1^dir;
+		B->longer = otherDir;
 		return E;
 	} else {
 		/* C holds the insertion so F is unbalanced */
@@ -141,10 +167,10 @@ StringTos64Tree_rotate_3(StringTo64Node* *path_top, s64 dir, s64 third)
  * INSERTION                                       *
  ***************************************************/
 static inline void
-StringTos64Tree_rebalance_path(StringTo64Node* path)
+avlTree_rebalance_path(StringToValNode* path)
 {
-	/* Each StringTo64Node* in path is currently balanced.
-	 * Until we find target, mark each StringTo64Node* as longer
+	/* Each StringToValNode* in path is currently balanced.
+	 * Until we find target, mark each StringToValNode* as longer
 	 * in the s32 of target because we know we have
 	 * inserted target there
 	 */
@@ -158,19 +184,20 @@ StringTos64Tree_rebalance_path(StringTo64Node* path)
 }
 
 static inline void
-StringTos64Tree_rebalance_insert(StringTo64Node* *path_top)
+avlTree_rebalance_insert(StringToValNode **path_top)
 {
-	StringTo64Node* path = *path_top;
-	s8 first, second, third;
-	if (Balanced(path)) 
+	StringToValNode *path = *path_top;
+	s64 first, second, third;
+	if (Balanced(path)) {
 		;
+	}
 	else if (path->longer != (first = (path->taken)) ) {
 		/* took the shorter path */
 		path->longer = NEITHER;
 		path = path->next[first];
 	} else if (first == (second = (path->next[first]->taken))) {
 		/* just a two-point rotate */
-		path = StringTos64Tree_rotate_2(path_top, first);
+		path = avlTree_rotate_2(path_top, first);
 	} else {
 		/* fine details of the 3 point rotate depend on the third step.
 		 * However there may not be a third step, if the third point of the
@@ -180,44 +207,44 @@ StringTos64Tree_rebalance_insert(StringTo64Node* *path_top)
 		path = path->next[first]->next[second];
 		if (path->taken==NEITHER) {third = NEITHER;}
 		else {third = (path->taken);}
-		path = StringTos64Tree_rotate_3(path_top, first, third);
+		path = avlTree_rotate_3(path_top, first, third);
 	}
-	StringTos64Tree_rebalance_path(path);
+	avlTree_rebalance_path(path);
 }
 
+STATIC_BUILD
 s32
-StringTos64Tree_insert(StringTo64Node* *treep, u8 *target, u32 len, s64 val)
+avlTree_insert(StringToValNode **treep, u8 *key, u32 keyLen, AvlValue val)
 {
-	/* insert the target into the tree, returning 1 on success or 0 if it
+	/* insert the key into the tree, returning 1 on success or 0 if it
 	 * already existed
 	 */
-	StringTo64Node* tree = *treep;
-	StringTo64Node* *path_top = treep;
+	StringToValNode *tree = *treep;
+	StringToValNode **path_top = treep;
 	s32 res;
-	u8 node_len;
-	//printf("StringTos64Tree_insert1\n");
-	while (tree && ((res=CMP(target, tree->key))!=0) ) {
+
+	while ( tree && ((res=CMP(key, tree->key))!=0) ) {
 		s8 next_step = tree->taken = (res>0);
-		if (!Balanced(tree)) path_top = treep;
+		if (!Balanced(tree)) {
+			path_top = treep;
+		}
 		treep = &tree->next[next_step];
 		tree = *treep;
 	}
+	
 	if (tree){ // tree already exists
 		tree->val = val; // update value
 		return 0;
 	}
-	node_len = ((27+len+1)+7)/8*8; // round up to 8 bytes
-	tree = malloc(node_len);
-	//tree = fith_alloc(node_len); 
-	tree->next[0] = tree->next[1] = NULL;
-	tree->val = val;
-	tree->longer = NEITHER;
-	tree->taken = NEITHER;
-	tree->len = node_len;
-	memcpy(tree->key, target, len);
-	tree->key[len] = 0; // null terminate
+	
+	tree = makeNode(key, keyLen, val);
+	if (tree==0) {
+		return -1;
+	}
+	
+	
 	*treep = tree;
-	StringTos64Tree_rebalance_insert(path_top);
+	avlTree_rebalance_insert(path_top);
 	return 1;
 }
 
@@ -226,10 +253,10 @@ StringTos64Tree_insert(StringTo64Node* *treep, u8 *target, u32 len, s64 val)
  *****************************************************/
 
 static inline void 
-StringTos64Tree_swap_del(StringTo64Node* *targetp, StringTo64Node* *treep, s64 dir)
+avlTree_swap_del(StringToValNode **targetp, StringToValNode **treep, s64 dir)
 {
-	StringTo64Node* targetn = *targetp;
-	StringTo64Node* tree = *treep;
+	StringToValNode *targetn = *targetp;
+	StringToValNode *tree = *treep;
 
 	*targetp = tree;
 	*treep = tree->next[1^dir];
@@ -237,42 +264,51 @@ StringTos64Tree_swap_del(StringTo64Node* *targetp, StringTo64Node* *treep, s64 d
 	tree->next[RIGHT]= targetn->next[RIGHT];
 	tree->longer = targetn->longer;
 
-	//free(targetn);
+	free(targetn);
 }
 
-static inline StringTo64Node* *
-StringTos64Tree_rebalance_del(StringTo64Node* *treep, StringTo64Node* *targetp)
+static inline StringToValNode**
+avlTree_rebalance_del(StringToValNode **treep, StringToValNode **targetp)
 {
-	/* each StringTo64Node* from treep down towards target, but
+	/* each StringToValNode* from treep down towards target, but
 	 * excluding the last, will have a subtree grow
 	 * and need rebalancing
 	 */
-	StringTo64Node* targetn = *targetp;
+	StringToValNode *targetn = *targetp;
+	StringToValNode *tree;
+	s64 dir, otherDir;
 
 	while (1) {
-		StringTo64Node* tree = *treep;
-		s8 dir = (tree->taken);
+		tree = *treep;
+		dir = (tree->taken);
+		otherDir = 1^dir;
 
-		if (tree->next[dir]==NULL)
+		if (tree->next[dir]==NULL){
 			break;
+		}
 
-		if (Balanced(tree))
-			tree->longer = 1^dir;
-		else if (tree->longer == dir)
+		if (Balanced(tree)){
+			tree->longer = otherDir;
+		}
+		else if (tree->longer == dir){
 			tree->longer = NEITHER;
+		}
 		else {
-			int second = tree->next[1^dir]->longer;
-			if (second == dir)
-				StringTos64Tree_rotate_3(treep, 1^dir, 
-					     tree->next[1^dir]->next[dir]->longer);
+			s32 second = tree->next[otherDir]->longer;
+			if (second == dir) {
+				avlTree_rotate_3(treep, otherDir, 
+					     tree->next[otherDir]->next[dir]->longer);
+			}
 			else if (second == NEITHER) {
-				StringTos64Tree_rotate_2(treep, 1^dir);
-				tree->longer = 1^dir;
+				avlTree_rotate_2(treep, otherDir);
+				tree->longer = otherDir;
 				(*treep)->longer = dir;
-			} else
-				StringTos64Tree_rotate_2(treep, 1^dir);
-			if (tree == targetn)
+			} else {
+				avlTree_rotate_2(treep, otherDir);
+			}
+			if (tree == targetn){
 				targetp = &(*treep)->next[dir];
+			}
 		}
 
 		treep = &tree->next[dir];
@@ -280,42 +316,48 @@ StringTos64Tree_rebalance_del(StringTo64Node* *treep, StringTo64Node* *targetp)
 	return targetp;
 }
 
+STATIC_BUILD
 s32
-StringTos64Tree_delete(StringTo64Node* *treep, u8 *target)
+avlTree_delete(StringToValNode **treep, u8 *key)
 {
 	/* delete the target from the tree, returning 1 on success or 0 if
 	 * it wasn't found
 	 */
-	StringTo64Node* tree = *treep;
-	StringTo64Node* *path_top = treep;
-	StringTo64Node* *targetp = NULL;
+	StringToValNode* tree = *treep;
+	StringToValNode **path_top = treep;
+	StringToValNode **targetp = NULL;
+	s64 dir, otherDir;
 	s32 res;
-	s8 dir;
+	
 	
 	while (tree) {
-		res = CMP(target, tree->key);
+		res = CMP(key, tree->key);
 		dir = tree->taken = (res>0);
-		if (res==0)
+		otherDir = 1^dir;
+		if (res==0){
 			targetp = treep;
-		if (tree->next[dir] == NULL)
+		}
+		if (tree->next[dir] == NULL){
 			break;
+		}
 		if (Balanced(tree)
-		    || (tree->longer == (1^dir) && Balanced(tree->next[1^dir]))
-			) path_top = treep;
+		    || (tree->longer == (otherDir) && Balanced(tree->next[otherDir]))
+			) {path_top = treep;}
 		treep = &tree->next[dir];
 		tree = *treep;
 	}
-	if (!targetp)
+	if (!targetp){
 		return 0;
+	}
 
 	/* adjust balance, but don't lose 'targetp' */
-	targetp = StringTos64Tree_rebalance_del(path_top, targetp);
+	targetp = avlTree_rebalance_del(path_top, targetp);
 
 	/* We have re-balanced everything, it remains only to 
 	 * swap the end of the path (*treep) with the deleted item
 	 * (*targetp)
 	 */
-	StringTos64Tree_swap_del(targetp, treep, dir);
+	avlTree_swap_del(targetp, treep, dir);
 
 	return 1;
 }

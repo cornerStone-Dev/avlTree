@@ -5,11 +5,26 @@
 
 #include "avlTree.h"
 
-#define UPPER_LIMIT 100000000
+typedef uint8_t  u8;
+typedef int8_t   s8;
+typedef uint32_t u32;
+typedef int32_t  s32;
+typedef uint64_t u64;
+typedef int64_t  s64;
+typedef float    f32;
+typedef double   f64;
+
+#define UPPER_LIMIT 15
+
+u32 function(StringToValNode *tree, u32 param)
+{
+	printf("%s\n", tree->key);
+	return param;
+}
 
 int main(void)
 {
-	StringTo64Node* tree=0, *tmp=0;
+	StringToValNode *tree=0, *tmp=0;
 	char buff[128];
 	s64 res=0;
 	
@@ -19,7 +34,7 @@ int main(void)
 	
 	for (s32 x=1; x<=UPPER_LIMIT; x++){
 		sprintf(buff, "%d", x);
-		StringTos64Tree_insert(&tree, (u8*)buff, strlen(buff), 0);
+		avlTree_insert(&tree, (u8*)buff, strlen(buff), 0);
 		//~ if (!StringTos64Tree_insert(&tree, buff, strlen(buff), 0) ){
 			//~ printf("Strange failure to insert %d\n", x);
 		//~ }
@@ -48,11 +63,13 @@ int main(void)
 		sprintf(buff, "%d", x);
 		//printf("AAtreedepth is %ld\n", res);
 		//StringTos64Tree_delete(&tree, buff);
-		StringTos64Tree_find(tree, (u8*)buff);
+		avlTree_find(tree, (u8*)buff);
 		//~ if (!StringTos64Tree_delete(&tree, buff) ){
 			//~ printf("Strange failure to delete %d\n", x);
 		//~ }
 	}
+	
+	INORDER_TRAVERSAL(tree, function, 1);
 	
 	//~ res =0;
 	//~ if(tree){
