@@ -318,7 +318,7 @@ avlTree_rebalance_del(StringToValNode **treep, StringToValNode **targetp)
 
 STATIC_BUILD
 s32
-avlTree_delete(StringToValNode **treep, u8 *key)
+avlTree_delete(StringToValNode **treep, u8 *key, AvlValue *val)
 {
 	/* delete the target from the tree, returning 1 on success or 0 if
 	 * it wasn't found
@@ -348,6 +348,10 @@ avlTree_delete(StringToValNode **treep, u8 *key)
 	}
 	if (!targetp){
 		return 0;
+	}
+	
+	if(val){
+		*val = (*targetp)->val;
 	}
 
 	/* adjust balance, but don't lose 'targetp' */

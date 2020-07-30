@@ -45,7 +45,7 @@ int32_t
 avlTree_insert(StringToValNode **treep, uint8_t *key, uint32_t keyLen, AvlValue val);
 
 int32_t
-avlTree_delete(StringToValNode **treep, uint8_t *key);
+avlTree_delete(StringToValNode **treep, uint8_t *key, AvlValue *val);
 
 uint32_t
 base128conversion(uint8_t *output, uint64_t input);
