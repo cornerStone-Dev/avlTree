@@ -47,19 +47,17 @@ avlTree_insert(StringToValNode **treep, uint8_t *key, uint32_t keyLen, AvlValue 
 int32_t
 avlTree_delete(StringToValNode **treep, uint8_t *key);
 
+uint32_t
+base128conversion(uint8_t *output, uint64_t input);
+
+uint64_t 
+atol_128(uint8_t *str);
+
 #define INORDER_TRAVERSAL(tree, function, param) \
 do{ \
-	if(tree) { \
 		StringToValNode *stack[48]; \
 		StringToValNode *treep = tree; \
-		u32 index = 0; \
-		u32 x = 0; \
-		\
-		do{ \
-			stack[x]=0; \
-			x++; \
-		}while(x<48); \
-		\
+		uint64_t index = 0; \
 		while(1) \
 		{ \
 			while(1) \
@@ -67,16 +65,13 @@ do{ \
 				if(treep==0){ \
 					break; \
 				} \
-				\
 				stack[index]= treep; \
 				index++; \
 				treep = treep->next[0]; \
 			} \
-			\
 			if(index==0){ \
 				break; \
 			} \
-			\
 			index--; \
 			treep = stack[index]; \
 			if(function(treep, param)==0){ \
@@ -84,7 +79,6 @@ do{ \
 			} \
 			treep = treep->next[1]; \
 		} \
-	} \
 }while(0) \
 
 #endif

@@ -361,3 +361,65 @@ avlTree_delete(StringToValNode **treep, u8 *key)
 
 	return 1;
 }
+
+
+#define SIGN_MASK   0x8000000000000000
+#define UNSIGN_MASK 0x7FFFFFFFFFFFFFFF
+
+u32
+base128conversion(u8 *output, u64 input)
+{
+	u8  tempOutput[16];
+	u8  *outputp = output;
+	s64 count = 0;
+	u64 tmp;
+	u8  header;
+	u8  isPositive = ((input&SIGN_MASK)==0);
+	
+	tempOutput[count] = '\0';
+	
+	input = input & UNSIGN_MASK;
+	
+	header = 65 - __builtin_clzl(input); // range 1 - 64
+	// set high bit on positive numbers
+	header = header | (isPositive<<7);
+	
+	do{
+		tmp = input % 128;
+		input = input / 128;
+		count++;
+		tempOutput[count] = (tmp+1);
+	}while(input);
+	
+	count++;
+	tempOutput[count] = header;
+	
+	do{
+		*outputp = tempOutput[count];
+		outputp++;
+		count--;
+	}while (count);
+	
+	*outputp = tempOutput[0];
+	return (outputp - output);
+}
+
+u64 
+atol_128(u8 *str)
+{
+	u64 val=0;
+	u64 isNegative = (((*str)&0x80)==0);
+	
+	// skip header
+	++str;
+	
+	while ( (*str >= 1) && (*str <= 128) ) {
+		val = (val * 128) + ((*str) - 1);
+		++str;
+	}
+	
+	// add back in sign bit
+	val = val | (isNegative<<63);
+	
+	return val;
+}

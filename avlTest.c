@@ -14,9 +14,9 @@ typedef int64_t  s64;
 typedef float    f32;
 typedef double   f64;
 
-#define UPPER_LIMIT 15
+#define UPPER_LIMIT 10
 
-u32 function(StringToValNode *tree, u32 param)
+static u32 function(StringToValNode *tree, u32 param)
 {
 	printf("%s\n", tree->key);
 	return param;
@@ -55,14 +55,14 @@ int main(void)
 	printf("[1] path is %ld long\n", res);
 	
 	res = avlTreeCount(tree, 0);
-	printf("AAtreecount is %ld\n", res);
+	printf("avlTreeCount is %ld\n", res);
 	res = avlTreeDepth(tree, 0);
-	printf("AAtreedepth is %ld\n", res);
+	printf("avlTreeDepth is %ld\n", res);
 	
 	for (s32 x=1; x<=UPPER_LIMIT; x++){
 		sprintf(buff, "%d", x);
 		//printf("AAtreedepth is %ld\n", res);
-		//StringTos64Tree_delete(&tree, buff);
+		//avlTree_delete(&tree, (u8*)buff);
 		avlTree_find(tree, (u8*)buff);
 		//~ if (!StringTos64Tree_delete(&tree, buff) ){
 			//~ printf("Strange failure to delete %d\n", x);
@@ -71,16 +71,31 @@ int main(void)
 	
 	INORDER_TRAVERSAL(tree, function, 1);
 	
-	//~ res =0;
-	//~ if(tree){
-		//~ res = AAtreecount(tree, 0);
-	//~ }
-	//~ printf("AAtreecount is %ld\n", res);
-	//~ res =0;
-	//~ if(tree){
-		//~ res = AAtreedepth(tree, 0);
-	//~ }
-	//~ printf("AAtreedepth is %ld\n", res);
+	res =0;
+	if(tree){
+		res = avlTreeCount(tree, 0);
+	}
+	printf("avlTreeCount is %ld\n", res);
+	res =0;
+	if(tree){
+		res = avlTreeDepth(tree, 0);
+	}
+	printf("avlTreeDepth is %ld\n", res);
+	
+	u32 value;
+	for(s64 x=-5, y=0; x<6; x++){
+		res = base128conversion( (u8*)buff, x);
+		while(buff[y]){
+			value = (u8)buff[y];
+			printf("[%d]",value);
+			y++;
+		}
+		printf("[0], LEN = %ld\n", res);
+		printf("VALUE = %ld\n", (s64)atol_128((u8*)buff));
+		
+		y=0;
+	}
+	
 	
 	return 0;
 }
