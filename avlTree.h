@@ -22,6 +22,10 @@ typedef uint64_t AvlValue;
 #define STATIC_BUILD
 #endif
 
+/*******************************************************************************
+ * Types
+*******************************************************************************/
+
 typedef struct StringToValNode_s StringToValNode;
 
 typedef struct StringToValNode_s {
@@ -32,53 +36,138 @@ typedef struct StringToValNode_s {
 	uint8_t         key[6];
 } StringToValNode;
 
-uint32_t
-avlTreeCount(StringToValNode *tree, uint32_t count);
+/*******************************************************************************
+ * Function API
+*******************************************************************************/
 
+STATIC_BUILD
 uint32_t
-avlTreeDepth(StringToValNode *tree, uint32_t depth);
+avlTree_count(StringToValNode* tree);
 
+STATIC_BUILD
+uint32_t
+avlTree_maxDepth(StringToValNode* tree);
+
+STATIC_BUILD
+void
+avlTree_freeAll(StringToValNode** treep);
+
+STATIC_BUILD
 StringToValNode*
 avlTree_find(StringToValNode *tree, uint8_t *key);
 
+STATIC_BUILD
 int32_t
-avlTree_insert(StringToValNode **treep, uint8_t *key, uint32_t keyLen, AvlValue val);
+avlTree_insert(
+	StringToValNode **treep,
+	uint8_t *key,
+	uint32_t keyLen,
+	AvlValue val);
 
+STATIC_BUILD
 int32_t
 avlTree_delete(StringToValNode **treep, uint8_t *key, AvlValue *val);
 
+STATIC_BUILD
 uint32_t
-base128conversion(uint8_t *output, uint64_t input);
+avlTree_s64toString(int64_t input, uint8_t *output);
 
-uint64_t 
-atol_128(uint8_t *str);
+STATIC_BUILD
+int64_t 
+avlTree_stringTos64(uint8_t *string);
 
 #define INORDER_TRAVERSAL(tree, function, param) \
 do{ \
-		StringToValNode *stack[48]; \
-		StringToValNode *treep = tree; \
-		uint64_t index = 0; \
+	StringToValNode *stack[48]; \
+	StringToValNode *treep = tree; \
+	uint64_t index = 0; \
+	while(1) \
+	{ \
 		while(1) \
 		{ \
-			while(1) \
-			{ \
-				if(treep==0){ \
-					break; \
-				} \
-				stack[index]= treep; \
-				index++; \
-				treep = treep->next[0]; \
-			} \
-			if(index==0){ \
+			if(treep==0){ \
 				break; \
 			} \
+			stack[index]= treep; \
+			index++; \
+			treep = treep->next[0]; \
+		} \
+		if(index==0){ \
+			break; \
+		} \
+		index--; \
+		treep = stack[index]; \
+		if(function(treep, param)==0){ \
+			break; \
+		} \
+		treep = treep->next[1]; \
+	} \
+}while(0)
+
+#define PREORDER_TRAVERSAL(tree, function, param) \
+do{ \
+	__label__ EXIT; \
+	StringToValNode *stack[48]; \
+	StringToValNode *treep = tree; \
+	uint64_t index = 0; \
+	while(1) \
+	{ \
+		while(1) \
+		{ \
+			if(treep==0){ \
+				break; \
+			} \
+			if(function(treep, param)==0){ \
+				goto EXIT; \
+			} \
+			stack[index]= treep; \
+			index++; \
+			treep = treep->next[0]; \
+		} \
+		if(index==0){ \
+			break; \
+		} \
+		index--; \
+		treep = stack[index]; \
+		treep = treep->next[1]; \
+	} \
+	EXIT: ;\
+}while(0)
+
+#define POSTORDER_TRAVERSAL(tree, function, param) \
+do{ \
+	__label__ T4; \
+	StringToValNode *stack[48]; \
+	StringToValNode *treep = tree; \
+	StringToValNode *last = 0; \
+	uint64_t index = 0; \
+	while(1) \
+	{ \
+		while(1) \
+		{ \
+			if(treep==0){ \
+				break; \
+			} \
+			stack[index]= treep; \
+			index++; \
+			treep = treep->next[0]; \
+		} \
+		T4: \
+		if(index==0){ \
+			break; \
+		} \
+		treep = stack[index-1]; \
+		if( (treep->next[1] == 0) || (treep->next[1] == last) ){ \
 			index--; \
-			treep = stack[index]; \
 			if(function(treep, param)==0){ \
 				break; \
 			} \
+			last = treep; \
+			goto T4; \
+		} else { \
 			treep = treep->next[1]; \
 		} \
-}while(0) \
+	} \
+}while(0)
 
 #endif

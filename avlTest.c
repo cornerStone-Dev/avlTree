@@ -14,7 +14,7 @@ typedef int64_t  s64;
 typedef float    f32;
 typedef double   f64;
 
-#define UPPER_LIMIT 10
+#define UPPER_LIMIT 3
 
 static u32 function(StringToValNode *tree, u32 param)
 {
@@ -54,10 +54,10 @@ int main(void)
 	}
 	printf("[1] path is %ld long\n", res);
 	
-	res = avlTreeCount(tree, 0);
-	printf("avlTreeCount is %ld\n", res);
-	res = avlTreeDepth(tree, 0);
-	printf("avlTreeDepth is %ld\n", res);
+	res = avlTree_count(tree);
+	printf("avlTree_count is %ld\n", res);
+	res = avlTree_maxDepth(tree);
+	printf("avlTree_maxDepth is %ld\n", res);
 	
 	for (s32 x=1; x<=UPPER_LIMIT; x++){
 		sprintf(buff, "%d", x);
@@ -71,27 +71,31 @@ int main(void)
 	
 	INORDER_TRAVERSAL(tree, function, 1);
 	
+	PREORDER_TRAVERSAL(tree, function, 1);
+	
+	POSTORDER_TRAVERSAL(tree, function, 1);
+	
 	res =0;
 	if(tree){
-		res = avlTreeCount(tree, 0);
+		res = avlTree_count(tree);
 	}
 	printf("avlTreeCount is %ld\n", res);
 	res =0;
 	if(tree){
-		res = avlTreeDepth(tree, 0);
+		res = avlTree_maxDepth(tree);
 	}
 	printf("avlTreeDepth is %ld\n", res);
 	
 	u32 value;
 	for(s64 x=-5, y=0; x<6; x++){
-		res = base128conversion( (u8*)buff, x);
+		res = avlTree_s64toString(x, (u8*)buff);
 		while(buff[y]){
 			value = (u8)buff[y];
 			printf("[%d]",value);
 			y++;
 		}
 		printf("[0], LEN = %ld\n", res);
-		printf("VALUE = %ld\n", (s64)atol_128((u8*)buff));
+		printf("VALUE = %ld\n", (s64)avlTree_stringTos64((u8*)buff));
 		
 		y=0;
 	}

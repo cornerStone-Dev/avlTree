@@ -15,17 +15,17 @@ typedef uint32_t u32;
 typedef int32_t  s32;
 typedef uint64_t u64;
 typedef int64_t  s64;
-typedef float    f32;
-typedef double   f64;
 
 #define LEFT     0
 #define RIGHT    1
 #define NEITHER -1
 #define Balanced(n) ((n)->longer < 0)
 
-static inline s32 stringCompare(u8 *str1, u8 *str2) __attribute__((always_inline));
+static inline s32
+stringCompare(u8 *str1, u8 *str2) __attribute__((always_inline));
 
-static inline s32 stringCompare(u8 *str1, u8 *str2)
+static inline s32
+stringCompare(u8 *str1, u8 *str2)
 {
 	s32 c1, c2;
 	
@@ -41,16 +41,15 @@ static inline s32 stringCompare(u8 *str1, u8 *str2)
 	}
 }
 
-STATIC_BUILD
-u32
-avlTreeDepth(StringToValNode* tree, u32 depth)
+static u32
+avlTreeDepth_r(StringToValNode* tree, u32 depth)
 {
 	u32 leftDepth=0, rightDepth=0;
 	if(tree->next[0]){
-		leftDepth = avlTreeDepth(tree->next[0], depth);
+		leftDepth = avlTreeDepth_r(tree->next[0], depth);
 	}
 	if(tree->next[1]){
-		rightDepth = avlTreeDepth(tree->next[1], depth);
+		rightDepth = avlTreeDepth_r(tree->next[1], depth);
 	}
 	
 	if(leftDepth>rightDepth){
@@ -61,18 +60,32 @@ avlTreeDepth(StringToValNode* tree, u32 depth)
 
 STATIC_BUILD
 u32
-avlTreeCount(StringToValNode* tree, u32 count)
+avlTree_maxDepth(StringToValNode* tree)
+{
+	return avlTreeDepth_r(tree, 0);
+}
+
+static u32
+avlTreeCount_r(StringToValNode* tree, u32 count)
 {
 	if(tree->next[0]){
-		count = avlTreeCount(tree->next[0], count);
+		count = avlTreeCount_r(tree->next[0], count);
 	}
 	if(tree->next[1]){
-		count = avlTreeCount(tree->next[1], count);
+		count = avlTreeCount_r(tree->next[1], count);
 	}
 
 	return count+1;
 }
 
+STATIC_BUILD
+u32
+avlTree_count(StringToValNode* tree)
+{
+	return avlTreeCount_r(tree, 0);
+}
+
+STATIC_BUILD
 StringToValNode*
 avlTree_find(StringToValNode* tree, u8 *target)
 {
@@ -84,7 +97,33 @@ avlTree_find(StringToValNode* tree, u8 *target)
 	return tree;
 }
 
-static u32 getNodeLen(u32 keyLen)
+static void
+avlTree_freeAll_r(StringToValNode** treep)
+{
+	StringToValNode *tree = *treep;
+	if (tree==0) {
+		return;
+	}
+	avlTree_freeAll_r(&tree->next[LEFT]);
+	avlTree_freeAll_r(&tree->next[RIGHT]);
+	free(tree);
+}
+
+STATIC_BUILD
+void
+avlTree_freeAll(StringToValNode** treep)
+{
+	StringToValNode *tree;
+	if (treep==0) {
+		return;
+	}
+	tree = *treep;
+	*treep = 0;
+	avlTree_freeAll_r(&tree);
+}
+
+static u32
+getNodeLen(u32 keyLen)
 {
 	// return nodeLen in bytes. Assume null termination, add 1
 	return (keyLen+1+sizeof(AvlValue)+18+7)/8*8; // round up to 8 bytes
@@ -370,22 +409,24 @@ avlTree_delete(StringToValNode **treep, u8 *key, AvlValue *val)
 #define SIGN_MASK   0x8000000000000000
 #define UNSIGN_MASK 0x7FFFFFFFFFFFFFFF
 
+STATIC_BUILD
 u32
-base128conversion(u8 *output, u64 input)
+avlTree_s64toString(s64 signedInput, u8 *output)
 {
 	u8  tempOutput[16];
 	u8  *outputp = output;
 	s64 count = 0;
 	u64 tmp;
+	u64 input = signedInput;
 	u8  header;
 	u8  isPositive = ((input&SIGN_MASK)==0);
-	
+	// null terminate
 	tempOutput[count] = '\0';
-	
+	// take off sign bit
 	input = input & UNSIGN_MASK;
-	
-	header = 65 - __builtin_clzl(input); // range 1 - 64
-	// set high bit on positive numbers
+	// range 1 - 64
+	header = 65 - __builtin_clzl(input); 
+	// set high bit on positive number's first byte (Big Endian)
 	header = header | (isPositive<<7);
 	
 	do{
@@ -408,22 +449,23 @@ base128conversion(u8 *output, u64 input)
 	return (outputp - output);
 }
 
-u64 
-atol_128(u8 *str)
+STATIC_BUILD
+s64 
+avlTree_stringTos64(u8 *string)
 {
-	u64 val=0;
-	u64 isNegative = (((*str)&0x80)==0);
+	u64 val = 0;
+	u64 isNegative = (((*string)&0x80)==0);
 	
 	// skip header
-	++str;
+	++string;
 	
-	while ( (*str >= 1) && (*str <= 128) ) {
-		val = (val * 128) + ((*str) - 1);
-		++str;
+	while ( (*string >= 1) && (*string <= 128) ) {
+		val = (val * 128) + ((*string) - 1);
+		++string;
 	}
 	
 	// add back in sign bit
 	val = val | (isNegative<<63);
 	
-	return val;
+	return (s64)val;
 }
