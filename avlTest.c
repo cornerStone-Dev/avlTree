@@ -42,12 +42,12 @@ uint32_t copy(StringToValNode *tree, StringToValNode **copyStackAddressp)
 		new->next[0]  = *copyStackAddressp;
 	}*/
 	// branchless style
-	//u64 val = new->next[1]!=0;
-	//copyStackAddressp-=val;
-	//new->next[1] = (StringToValNode *)(((u64)*copyStackAddressp)&(-val));
-	//u64 val2 = new->next[0]!=0;
-	//copyStackAddressp-=val2;
-	//new->next[0] = (StringToValNode *)(((u64)*copyStackAddressp)&(-val2));
+	u64 val = new->next[1]!=0;
+	copyStackAddressp-=val;
+	new->next[1] = (StringToValNode *)(((u64)*copyStackAddressp)&(-val));
+	u64 val2 = new->next[0]!=0;
+	copyStackAddressp-=val2;
+	new->next[0] = (StringToValNode *)(((u64)*copyStackAddressp)&(-val2));
 
 	// put yourself on the stack
 	*copyStackAddressp = new;
