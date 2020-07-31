@@ -1,22 +1,33 @@
 /* avlTree.h */
 
-#ifndef AVL_TREE_HEADER
-#define AVL_TREE_HEADER
+#ifndef AVLTREE_HEADER
+#define AVLTREE_HEADER
 #include <stdint.h>
 
 /*******************************************************************************
  * INTERFACE FOR ALTERATIONS
 *******************************************************************************/
+//#define AVLTREE_TREE_DEBUG
 
-#ifndef AVL_CUSTOM_TYPE
+#ifdef AVLTREE_TREE_DEBUG
+#include <stdio.h>
+#endif
+
+#ifndef AVLTREE_CUSTOM_ALLOC
+#include <stdlib.h>
+#define AVLTREE_FREE   free
+#define AVLTREE_MALLOC malloc
+#endif
+
+#ifndef AVLTREE_CUSTOM_TYPE
 typedef uint64_t AvlValue;
 #endif
 
-#ifndef AVL_CUSTOM_CMP
+#ifndef AVLTREE_CUSTOM_CMP
 #define CMP(x,y)  (stringCompare((x),(y)))
 #endif
 
-#ifdef STATIC_BUILD
+#ifdef AVLTREE_STATIC_BUILD
 #define STATIC_BUILD static
 #else
 #define STATIC_BUILD
@@ -30,31 +41,37 @@ typedef struct StringToValNode_s StringToValNode;
 
 typedef struct StringToValNode_s {
 	StringToValNode *next[2];
-	AvlValue        val;
-	int8_t          longer;
-	int8_t          taken;
-	uint8_t         key[6];
+	AvlValue         value;
+	int8_t           longer;
+	int8_t           taken;
+	uint8_t          key[6];
 } StringToValNode;
 
+// Main Function API error enumeration
+enum {
+	// errors
+	avlTree_errorNullParam1   = -1,
+	avlTree_errorNullParam2   = -2,
+	avlTree_errorNullParam3   = -3,
+	avlTree_errorMallocFailed = -4,
+	// worked as expected
+	avlTree_OK = 0,
+	// not an error, but did not work as expected
+	avlTree_nothingFound = 1,
+	avlTree_updatedValOfExistingKey = 2,
+};
+
 /*******************************************************************************
- * Function API
+ * Main Function API
 *******************************************************************************/
 
 STATIC_BUILD
-uint32_t
-avlTree_count(StringToValNode* tree);
+int32_t
+avlTree_find(StringToValNode *tree, uint8_t *key, StringToValNode **result);
 
 STATIC_BUILD
-uint32_t
-avlTree_maxDepth(StringToValNode* tree);
-
-STATIC_BUILD
-void
-avlTree_freeAll(StringToValNode** treep);
-
-STATIC_BUILD
-StringToValNode*
-avlTree_find(StringToValNode *tree, uint8_t *key);
+int32_t
+avlTree_findIntKey(StringToValNode *tree, int64_t key, StringToValNode **result);
 
 STATIC_BUILD
 int32_t
@@ -62,11 +79,50 @@ avlTree_insert(
 	StringToValNode **treep,
 	uint8_t *key,
 	uint32_t keyLen,
-	AvlValue val);
+	AvlValue value);
 
 STATIC_BUILD
 int32_t
-avlTree_delete(StringToValNode **treep, uint8_t *key, AvlValue *val);
+avlTree_insertIntKey(
+	StringToValNode **treep,
+	int64_t key,
+	AvlValue value);
+
+STATIC_BUILD
+int32_t
+avlTree_delete(
+	StringToValNode **treep,
+	uint8_t *key,
+	AvlValue *value);
+
+STATIC_BUILD
+int32_t
+avlTree_deleteIntKey(
+	StringToValNode **treep,
+	int64_t key,
+	AvlValue *value);
+
+/*******************************************************************************
+ * Helper/Utility Function API
+*******************************************************************************/
+
+#ifdef AVLTREE_TREE_DEBUG
+STATIC_BUILD
+void
+avlTree_debugPrintf(int32_t mainAPIReturnValue);
+#endif
+
+STATIC_BUILD
+uint32_t
+avlTree_count(StringToValNode *tree);
+
+STATIC_BUILD
+uint32_t
+avlTree_maxDepth(StringToValNode *tree);
+
+STATIC_BUILD
+void
+avlTree_freeAll(StringToValNode** treep);
 
 STATIC_BUILD
 uint32_t
@@ -75,6 +131,12 @@ avlTree_s64toString(int64_t input, uint8_t *output);
 STATIC_BUILD
 int64_t 
 avlTree_stringTos64(uint8_t *string);
+
+/*******************************************************************************
+ * Inline traversal MACRO API
+ * This can be used to implement function programming style function or
+ * iterators. Such as map, filter, reduce, etc.
+*******************************************************************************/
 
 #define INORDER_TRAVERSAL(tree, function, param) \
 do{ \

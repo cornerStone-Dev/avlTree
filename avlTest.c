@@ -14,11 +14,11 @@ typedef int64_t  s64;
 typedef float    f32;
 typedef double   f64;
 
-#define UPPER_LIMIT 3
+#define UPPER_LIMIT 1000000
 
 static u32 function(StringToValNode *tree, u32 param)
 {
-	printf("%s\n", tree->key);
+	printf("%ld\n", avlTree_stringTos64(tree->key));
 	return param;
 }
 
@@ -28,14 +28,13 @@ int main(void)
 	char buff[128];
 	s64 res=0;
 	
-	//alloc = malloc(sizeof (Alloc));
-	//fith_alloc_init(alloc);
-	
-	
-	for (s32 x=1; x<=UPPER_LIMIT; x++){
-		sprintf(buff, "%d", x);
-		avlTree_insert(&tree, (u8*)buff, strlen(buff), 0);
-		//~ if (!StringTos64Tree_insert(&tree, buff, strlen(buff), 0) ){
+	for (s64 x=1; x<=UPPER_LIMIT; x++){
+		avlTree_insertIntKey(
+			&tree,
+			x,
+			0);
+		//sprintf(buff, "%d", x);
+		//~ if ( avlTree_insert(&tree, (u8*)buff, strlen(buff), 0) ){
 			//~ printf("Strange failure to insert %d\n", x);
 		//~ }
 	}
@@ -59,14 +58,22 @@ int main(void)
 	res = avlTree_maxDepth(tree);
 	printf("avlTree_maxDepth is %ld\n", res);
 	
-	for (s32 x=1; x<=UPPER_LIMIT; x++){
-		sprintf(buff, "%d", x);
-		//printf("AAtreedepth is %ld\n", res);
-		//avlTree_delete(&tree, (u8*)buff);
-		avlTree_find(tree, (u8*)buff);
+	for (s64 x=1; x<=UPPER_LIMIT; x++){
+		//sprintf(buff, "%d", x);
+		//avlTree_find(tree, (u8*)buff, &tmp);
+		avlTree_findIntKey(tree, x, &tmp);
 		//~ if (!StringTos64Tree_delete(&tree, buff) ){
 			//~ printf("Strange failure to delete %d\n", x);
 		//~ }
+	}
+	
+	avlTree_freeAll(&tree);
+	
+	for (s32 x=1; x<=5; x++){
+		avlTree_insertIntKey(
+			&tree,
+			x,
+			0);
 	}
 	
 	INORDER_TRAVERSAL(tree, function, 1);
@@ -76,18 +83,14 @@ int main(void)
 	POSTORDER_TRAVERSAL(tree, function, 1);
 	
 	res =0;
-	if(tree){
-		res = avlTree_count(tree);
-	}
+	res = avlTree_count(tree);
 	printf("avlTreeCount is %ld\n", res);
 	res =0;
-	if(tree){
-		res = avlTree_maxDepth(tree);
-	}
+	res = avlTree_maxDepth(tree);
 	printf("avlTreeDepth is %ld\n", res);
 	
 	u32 value;
-	for(s64 x=-5, y=0; x<6; x++){
+	for(s64 x=-2, y=0; x<3; x++){
 		res = avlTree_s64toString(x, (u8*)buff);
 		while(buff[y]){
 			value = (u8)buff[y];
@@ -99,8 +102,7 @@ int main(void)
 		
 		y=0;
 	}
-	
-	
+
 	return 0;
 }
 

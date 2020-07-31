@@ -1,12 +1,5 @@
 /* avlTree.c */
 
-#define AVL_TREE_DEBUG
-
-#ifdef AVL_TREE_DEBUG
-#include <stdio.h>
-#endif
-#include <stdlib.h>
-
 #include "avlTree.h"
 
 typedef uint8_t  u8;
@@ -41,85 +34,87 @@ stringCompare(u8 *str1, u8 *str2)
 	}
 }
 
-static u32
-avlTreeDepth_r(StringToValNode* tree, u32 depth)
-{
-	u32 leftDepth=0, rightDepth=0;
-	if(tree->next[0]){
-		leftDepth = avlTreeDepth_r(tree->next[0], depth);
-	}
-	if(tree->next[1]){
-		rightDepth = avlTreeDepth_r(tree->next[1], depth);
-	}
-	
-	if(leftDepth>rightDepth){
-		rightDepth=leftDepth;
-	}
-	return rightDepth+1;
-}
-
+#ifdef AVLTREE_TREE_DEBUG
 STATIC_BUILD
-u32
-avlTree_maxDepth(StringToValNode* tree)
+void
+avlTree_debugPrintf(s32 mainAPIReturnValue)
 {
-	return avlTreeDepth_r(tree, 0);
-}
-
-static u32
-avlTreeCount_r(StringToValNode* tree, u32 count)
-{
-	if(tree->next[0]){
-		count = avlTreeCount_r(tree->next[0], count);
+	s32 x = mainAPIReturnValue;
+	switch(x){
+		case avlTree_errorNullParam1:
+		printf("avlTree Error: First parameter provided is NULL(0).\n");
+		break;
+		case avlTree_errorNullParam2:
+		printf("avlTree Error: Second parameter provided is NULL(0).\n");
+		break;
+		case avlTree_errorNullParam3:
+		printf("avlTree Error: Third parameter provided is NULL(0).\n");
+		break;
+		case avlTree_errorMallocFailed:
+		printf("avlTree Error: Malloc was called and returned NULL(0).\n");
+		break;
+		case avlTree_OK:
+		printf("avlTree OK: Everything worked as intended.\n");
+		break;
+		case avlTree_nothingFound:
+		printf("avlTree Status: Search for node terminated with nothing.\n");
+		break;
+		case avlTree_updatedValOfExistingKey:
+		printf("avlTree Status: Existing key found and value updated.\n");
+		break;
+		default:
+		printf("avlTree Default: This value is not enumerated."
+		       " Debug has no information for you\n");
 	}
-	if(tree->next[1]){
-		count = avlTreeCount_r(tree->next[1], count);
-	}
-
-	return count+1;
 }
+#endif
 
-STATIC_BUILD
-u32
-avlTree_count(StringToValNode* tree)
-{
-	return avlTreeCount_r(tree, 0);
-}
-
-STATIC_BUILD
-StringToValNode*
-avlTree_find(StringToValNode* tree, u8 *target)
+static StringToValNode *
+avlTree_find_internal(StringToValNode *tree, u8 *key)
 {
 	s32 res;
-	while (tree && ((res=CMP(target, tree->key))!=0) ) {
+	while ( (res=CMP(key, tree->key))!=0 ) {
 		s8 next_step = (res>0);
 		tree = tree->next[next_step];
+		if(tree==0){
+			break;
+		}
 	}
 	return tree;
 }
 
-static void
-avlTree_freeAll_r(StringToValNode** treep)
+STATIC_BUILD
+s32
+avlTree_find(StringToValNode *tree, u8 *key, StringToValNode **result)
 {
-	StringToValNode *tree = *treep;
-	if (tree==0) {
-		return;
+	StringToValNode *internalResult;
+	if(tree==0){
+		return avlTree_errorNullParam1;
 	}
-	avlTree_freeAll_r(&tree->next[LEFT]);
-	avlTree_freeAll_r(&tree->next[RIGHT]);
-	free(tree);
+	if(key==0){
+		return avlTree_errorNullParam2;
+	}
+	if(result==0){
+		return avlTree_errorNullParam3;
+	}
+	
+	internalResult = avlTree_find_internal(tree, key);
+	
+	if(internalResult==0){
+		return avlTree_nothingFound;
+	}
+
+	*result = tree;
+	return avlTree_OK;
 }
 
 STATIC_BUILD
-void
-avlTree_freeAll(StringToValNode** treep)
+s32
+avlTree_findIntKey(StringToValNode *tree, s64 key, StringToValNode **result)
 {
-	StringToValNode *tree;
-	if (treep==0) {
-		return;
-	}
-	tree = *treep;
-	*treep = 0;
-	avlTree_freeAll_r(&tree);
+	u8 keyBuffer[16];
+	(void)avlTree_s64toString(key, keyBuffer);
+	return avlTree_find(tree, keyBuffer, result);
 }
 
 static u32
@@ -130,15 +125,15 @@ getNodeLen(u32 keyLen)
 }
 
 static inline StringToValNode*
-makeNode(u8 *key, u32 keyLen, AvlValue val)
+makeNode(u8 *key, u32 keyLen, AvlValue value)
 {
 	u32 i=0;
 	u32 node_len = getNodeLen(keyLen);
-	StringToValNode *tree = malloc(node_len);
+	StringToValNode *tree = AVLTREE_MALLOC(node_len);
 	
 	if (tree) {
 		tree->next[0] = tree->next[1] = 0;
-		tree->val = val;
+		tree->value = value;
 		tree->longer = NEITHER;
 		tree->taken = NEITHER;
 		do{tree->key[i]=key[i];i++;}while(i<keyLen);
@@ -164,7 +159,6 @@ avlTree_rotate_2(StringToValNode* *path_top, s64 dir)
 	D->longer = NEITHER;
 	return E;
 }
-
 
 static StringToValNode*
 avlTree_rotate_3(StringToValNode* *path_top, s64 dir, s64 third)
@@ -251,13 +245,14 @@ avlTree_rebalance_insert(StringToValNode **path_top)
 	avlTree_rebalance_path(path);
 }
 
-STATIC_BUILD
-s32
-avlTree_insert(StringToValNode **treep, u8 *key, u32 keyLen, AvlValue val)
+
+static s32
+avlTree_insert_internal(
+	StringToValNode **treep,
+	u8 *key,
+	u32 keyLen,
+	AvlValue value)
 {
-	/* insert the key into the tree, returning 1 on success or 0 if it
-	 * already existed
-	 */
 	StringToValNode *tree = *treep;
 	StringToValNode **path_top = treep;
 	s32 res;
@@ -272,19 +267,48 @@ avlTree_insert(StringToValNode **treep, u8 *key, u32 keyLen, AvlValue val)
 	}
 	
 	if (tree){ // tree already exists
-		tree->val = val; // update value
-		return 0;
+		tree->value = value; // update value
+		return avlTree_updatedValOfExistingKey;
 	}
 	
-	tree = makeNode(key, keyLen, val);
+	tree = makeNode(key, keyLen, value);
 	if (tree==0) {
-		return -1;
+		return avlTree_errorMallocFailed;
 	}
 	
 	
 	*treep = tree;
 	avlTree_rebalance_insert(path_top);
-	return 1;
+	return avlTree_OK;
+}
+
+STATIC_BUILD
+s32
+avlTree_insert(
+	StringToValNode **treep,
+	u8 *key,
+	u32 keyLen,
+	AvlValue value)
+{
+	if(treep==0){
+		return avlTree_errorNullParam1;
+	}
+	if(key==0){
+		return avlTree_errorNullParam2;
+	}
+	return avlTree_insert_internal(treep, key, keyLen, value);
+}
+
+STATIC_BUILD
+s32
+avlTree_insertIntKey(
+	StringToValNode **treep,
+	s64 key,
+	AvlValue value)
+{
+	u8  keyBuffer[16];
+	u32 keyLen = avlTree_s64toString(key, keyBuffer);
+	return avlTree_insert(treep, keyBuffer, keyLen, value);
 }
 
 /******************************************************
@@ -303,7 +327,7 @@ avlTree_swap_del(StringToValNode **targetp, StringToValNode **treep, s64 dir)
 	tree->next[RIGHT]= targetn->next[RIGHT];
 	tree->longer = targetn->longer;
 
-	free(targetn);
+	AVLTREE_FREE(targetn);
 }
 
 static inline StringToValNode**
@@ -355,21 +379,24 @@ avlTree_rebalance_del(StringToValNode **treep, StringToValNode **targetp)
 	return targetp;
 }
 
-STATIC_BUILD
-s32
-avlTree_delete(StringToValNode **treep, u8 *key, AvlValue *val)
+
+static s32
+avlTree_delete_internal(StringToValNode **treep, u8 *key, AvlValue *value)
 {
 	/* delete the target from the tree, returning 1 on success or 0 if
 	 * it wasn't found
 	 */
-	StringToValNode* tree = *treep;
-	StringToValNode **path_top = treep;
-	StringToValNode **targetp = NULL;
+	StringToValNode *tree;
+	StringToValNode **path_top;
+	StringToValNode **targetp;
 	s64 dir, otherDir;
 	s32 res;
 	
-	
-	while (tree) {
+	tree = *treep;
+	path_top = treep;
+	targetp = NULL;
+
+	do {
 		res = CMP(key, tree->key);
 		dir = tree->taken = (res>0);
 		otherDir = 1^dir;
@@ -384,13 +411,14 @@ avlTree_delete(StringToValNode **treep, u8 *key, AvlValue *val)
 			) {path_top = treep;}
 		treep = &tree->next[dir];
 		tree = *treep;
-	}
+	} while (tree);
+	
 	if (!targetp){
-		return 0;
+		return avlTree_nothingFound;
 	}
 	
-	if(val){
-		*val = (*targetp)->val;
+	if(value){
+		*value = (*targetp)->value;
 	}
 
 	/* adjust balance, but don't lose 'targetp' */
@@ -402,9 +430,112 @@ avlTree_delete(StringToValNode **treep, u8 *key, AvlValue *val)
 	 */
 	avlTree_swap_del(targetp, treep, dir);
 
-	return 1;
+	return avlTree_OK;
 }
 
+STATIC_BUILD
+s32
+avlTree_delete(StringToValNode **treep, u8 *key, AvlValue *value)
+{	
+	if(treep==0){
+		return avlTree_errorNullParam1;
+	}
+	if(key==0){
+		return avlTree_errorNullParam2;
+	}
+	return avlTree_delete_internal(treep, key, value);
+}
+
+STATIC_BUILD
+s32
+avlTree_deleteIntKey(
+	StringToValNode **treep,
+	s64 key,
+	AvlValue *value)
+{
+	u8 keyBuffer[16];
+	(void)avlTree_s64toString(key, keyBuffer);
+	return avlTree_delete(treep, keyBuffer, value);
+}
+
+/*******************************************************************************
+ * Helper Functions
+*******************************************************************************/
+
+static u32
+avlTreeDepth_r(StringToValNode *tree, u32 depth)
+{
+	u32 leftDepth=0, rightDepth=0;
+	if(tree->next[0]){
+		leftDepth = avlTreeDepth_r(tree->next[0], depth);
+	}
+	if(tree->next[1]){
+		rightDepth = avlTreeDepth_r(tree->next[1], depth);
+	}
+	
+	if(leftDepth>rightDepth){
+		rightDepth=leftDepth;
+	}
+	return rightDepth+1;
+}
+
+STATIC_BUILD
+u32
+avlTree_maxDepth(StringToValNode *tree)
+{
+	if(tree==0){
+		return 0;
+	}
+	return avlTreeDepth_r(tree, 0);
+}
+
+static u32
+avlTreeCount_r(StringToValNode *tree, u32 count)
+{
+	if(tree->next[0]){
+		count = avlTreeCount_r(tree->next[0], count);
+	}
+	if(tree->next[1]){
+		count = avlTreeCount_r(tree->next[1], count);
+	}
+
+	return count+1;
+}
+
+STATIC_BUILD
+u32
+avlTree_count(StringToValNode *tree)
+{
+	if(tree==0){
+		return 0;
+	}
+	return avlTreeCount_r(tree, 0);
+}
+
+static void
+avlTree_freeAll_r(StringToValNode **treep)
+{
+	StringToValNode *tree = *treep;
+	if (tree==0) {
+		return;
+	}
+	avlTree_freeAll_r(&tree->next[LEFT]);
+	avlTree_freeAll_r(&tree->next[RIGHT]);
+	AVLTREE_FREE(tree);
+}
+
+STATIC_BUILD
+void
+avlTree_freeAll(StringToValNode **treep)
+{
+	StringToValNode *tree;
+	if (treep==0) {
+		return;
+	}
+	tree = *treep;
+	*treep = 0;
+	avlTree_freeAll_r(&tree);
+}
 
 #define SIGN_MASK   0x8000000000000000
 #define UNSIGN_MASK 0x7FFFFFFFFFFFFFFF
