@@ -104,7 +104,7 @@ avlTree_find(StringToValNode *tree, u8 *key, StringToValNode **result)
 		return avlTree_nothingFound;
 	}
 
-	*result = tree;
+	*result = internalResult;
 	return avlTree_OK;
 }
 
@@ -244,7 +244,6 @@ avlTree_rebalance_insert(StringToValNode **path_top)
 	}
 	avlTree_rebalance_path(path);
 }
-
 
 static s32
 avlTree_insert_internal(

@@ -61,11 +61,20 @@ int main(void)
 	for (s64 x=1; x<=UPPER_LIMIT; x++){
 		//sprintf(buff, "%d", x);
 		//avlTree_find(tree, (u8*)buff, &tmp);
-		avlTree_findIntKey(tree, x, &tmp);
+		//avlTree_findIntKey(tree, x, &tmp);
+		avlTree_deleteIntKey(
+			&tree,
+			x,
+			(u64*)&res);
 		//~ if (!StringTos64Tree_delete(&tree, buff) ){
 			//~ printf("Strange failure to delete %d\n", x);
 		//~ }
 	}
+	
+	res = avlTree_count(tree);
+	printf("avlTree_count is %ld\n", res);
+	res = avlTree_maxDepth(tree);
+	printf("avlTree_maxDepth is %ld\n", res);
 	
 	avlTree_freeAll(&tree);
 	

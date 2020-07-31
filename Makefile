@@ -2,7 +2,7 @@
 all: bin avlTree.o bin/avlTest
 
 avlTree.o: avlTree.c avlTree.h
-	gcc -Os -march=native avlTree.c -s -c -o avlTree.o -Wall -Wextra
+	gcc -Os -march=native avlTree.c -c -o avlTree.o -Wall -Wextra
 	size avlTree.o
 
 bin/avlTest: avlTest.c avlTree.o
