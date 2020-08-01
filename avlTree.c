@@ -136,10 +136,10 @@ avlTree_rotate_3(StringToValNode* *path_top, s64 dir, s64 third)
 	}
 }
 
-
 /*******************************************************************************
  * Section Insertion
  ******************************************************************************/
+
 static inline void
 avlTree_rebalance_path(StringToValNode* path)
 {
@@ -453,6 +453,30 @@ stringCompare(u8 *str1, u8 *str2)
 /*******************************************************************************
  * Section Utilities
 *******************************************************************************/
+
+STATIC_BUILD
+StringToValNode*
+avlTree_max(StringToValNode *tree)
+{
+	StringToValNode *previous = 0;
+	while(tree){
+		previous=tree;
+		tree = tree->next[RIGHT];
+	}
+	return previous;
+}
+
+STATIC_BUILD
+StringToValNode*
+avlTree_min(StringToValNode *tree)
+{
+	StringToValNode *previous = 0;
+	while(tree){
+		previous=tree;
+		tree = tree->next[LEFT];
+	}
+	return previous;
+}
 
 static u32
 avlTreeDepth_r(StringToValNode *tree, u32 depth)

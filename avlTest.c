@@ -149,6 +149,9 @@ int main(void)
 	
 	printf("\nnew tree end\n");
 	
+	printf("avlTree_max= %ld\n",avlTree_stringTos64(avlTree_max(newTree)->key));
+	printf("avlTree_min= %ld\n",avlTree_stringTos64(avlTree_min(newTree)->key));
+	
 	u32 value;
 	for(s64 x=-2, y=0; x<3; x++){
 		res = avlTree_s64toString(x, (u8*)buff);
@@ -158,7 +161,7 @@ int main(void)
 			y++;
 		}
 		printf("[0], LEN = %ld\n", res);
-		printf("VALUE = %ld\n", (s64)avlTree_stringTos64((u8*)buff));
+		printf("VALUE = %ld\n", avlTree_stringTos64((u8*)buff));
 		
 		y=0;
 	}

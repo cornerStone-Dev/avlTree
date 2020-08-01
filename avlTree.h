@@ -125,6 +125,14 @@ avlTree_debugPrintf(int32_t mainAPIReturnValue);
 #endif
 
 STATIC_BUILD
+StringToValNode*
+avlTree_max(StringToValNode *tree);
+
+STATIC_BUILD
+StringToValNode*
+avlTree_min(StringToValNode *tree);
+
+STATIC_BUILD
 uint32_t
 avlTree_count(StringToValNode *tree);
 
