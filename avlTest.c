@@ -14,7 +14,7 @@ typedef int64_t  s64;
 typedef float    f32;
 typedef double   f64;
 
-#define UPPER_LIMIT 10000000
+#define UPPER_LIMIT 1000000
 
 static u32 function(StringToValNode *tree, u32 param)
 {

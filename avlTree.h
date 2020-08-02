@@ -86,7 +86,7 @@ STATIC_BUILD
 int32_t
 avlTree_insert(
 	StringToValNode **treep, // pointer memory holding address of tree
-	uint8_t *key,            // pointer to string key(null termination optional)
+	uint8_t *key,            // pointer to c-string key(null required)
 	uint32_t keyLen,         // length of key in bytes(not including null)
 	AvlValue value);         // value to be stored
 
@@ -286,37 +286,36 @@ do{ \
 
 #define POSTORDER_TRAVERSAL(tree, function, parameter) \
 do{ \
-	__label__ T4; \
+	__label__ T4, T1a; \
 	StringToValNode *stack[48]; \
 	StringToValNode *treep = tree; \
 	StringToValNode *last = 0; \
 	uint64_t index = 0; \
 	while(1) \
 	{ \
-		while(1) \
-		{ \
-			if(treep==0){ \
-				break; \
-			} \
-			stack[index]= treep; \
-			index++; \
-			treep = treep->next[0]; \
-		} \
-		T4: \
-		if(index==0){ \
+		if(treep==0){ \
 			break; \
 		} \
-		treep = stack[index-1]; \
-		if( (treep->next[1] == 0) || (treep->next[1] == last) ){ \
-			index--; \
-			if(function(treep, parameter)){ \
-				break; \
-			} \
-			last = treep; \
-			goto T4; \
-		} else { \
-			treep = treep->next[1]; \
+		T1a: \
+		stack[index]= treep; \
+		index++; \
+		treep = treep->next[0]; \
+	} \
+	T4: \
+	if(index==0){ \
+		break; \
+	} \
+	treep = stack[index-1]; \
+	if( (treep->next[1] == 0) || (treep->next[1] == last) ){ \
+		index--; \
+		if(function(treep, parameter)){ \
+			break; \
 		} \
+		last = treep; \
+		goto T4; \
+	} else { \
+		treep = treep->next[1]; \
+		goto T1a; \
 	} \
 }while(0)
 

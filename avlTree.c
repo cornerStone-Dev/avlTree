@@ -646,14 +646,15 @@ avlTree_debugPrintf(s32 mainAPIReturnValue)
 		printf("avlTree OK: Everything worked as intended.\n");
 		break;
 		case avlTree_nothingFound:
-		printf("avlTree Status: Search for node terminated with nothing.\n");
+		printf("avlTree Status: Nothing Found. Search for node terminated"
+			   " with nothing in delete or insert.\n");
 		break;
 		case avlTree_updatedValOfExistingKey:
 		printf("avlTree Status: Existing key found and value updated.\n");
 		break;
 		default:
 		printf("avlTree Default: This value is not enumerated."
-		       " Debug has no information for you\n");
+		       " Debug has no information for you.\n");
 	}
 }
 #endif
