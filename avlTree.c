@@ -45,7 +45,7 @@ avlTree_find_internal(StringToValNode *tree, u8 *key)
 	return tree;
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 s32
 avlTree_find(StringToValNode *tree, u8 *key, StringToValNode **result)
 {
@@ -70,7 +70,7 @@ avlTree_find(StringToValNode *tree, u8 *key, StringToValNode **result)
 	return avlTree_OK;
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 s32
 avlTree_findIntKey(StringToValNode *tree, s64 key, StringToValNode **result)
 {
@@ -222,7 +222,7 @@ avlTree_insert_internal(
 	return avlTree_OK;
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 s32
 avlTree_insert(
 	StringToValNode **treep,
@@ -239,7 +239,7 @@ avlTree_insert(
 	return avlTree_insert_internal(treep, key, keyLen, value);
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 s32
 avlTree_insertIntKey(
 	StringToValNode **treep,
@@ -375,7 +375,7 @@ avlTree_delete_internal(
 	return avlTree_OK;
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 s32
 avlTree_delete(StringToValNode **treep, u8 *key, AvlValue *value)
 {	
@@ -392,7 +392,7 @@ avlTree_delete(StringToValNode **treep, u8 *key, AvlValue *value)
 	return avlTree_delete_internal(treep, tree, key, value);
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 s32
 avlTree_deleteIntKey(
 	StringToValNode **treep,
@@ -454,7 +454,7 @@ stringCompare(u8 *str1, u8 *str2)
  * Section Utilities
 *******************************************************************************/
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 StringToValNode*
 avlTree_max(StringToValNode *tree)
 {
@@ -466,7 +466,7 @@ avlTree_max(StringToValNode *tree)
 	return previous;
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 StringToValNode*
 avlTree_min(StringToValNode *tree)
 {
@@ -495,7 +495,7 @@ avlTreeDepth_r(StringToValNode *tree, u32 depth)
 	return rightDepth+1;
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 u32
 avlTree_maxDepth(StringToValNode *tree)
 {
@@ -518,7 +518,7 @@ avlTreeCount_r(StringToValNode *tree, u32 count)
 	return count+1;
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 u32
 avlTree_count(StringToValNode *tree)
 {
@@ -539,7 +539,7 @@ avlTree_freeAll_r(StringToValNode *tree)
 	AVLTREE_FREE(tree);
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 void
 avlTree_freeAll(StringToValNode **treep)
 {
@@ -555,7 +555,7 @@ avlTree_freeAll(StringToValNode **treep)
 #define SIGN_MASK   0x8000000000000000
 #define UNSIGN_MASK 0x7FFFFFFFFFFFFFFF
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 u32
 avlTree_s64toString(s64 signedInput, u8 *output)
 {
@@ -595,7 +595,7 @@ avlTree_s64toString(s64 signedInput, u8 *output)
 	return (outputp - output);
 }
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 s64 
 avlTree_stringTos64(u8 *string)
 {
@@ -621,40 +621,32 @@ avlTree_stringTos64(u8 *string)
 *******************************************************************************/
 
 #ifdef AVLTREE_TREE_DEBUG
-STATIC_BUILD
-void
-avlTree_debugPrintf(s32 mainAPIReturnValue)
+AVLTREE_STATIC_BUILD
+u8 *
+avlTree_debugString(s32 mainAPIReturnValue)
 {
 	s32 x = mainAPIReturnValue;
 	switch(x){
 		case avlTree_errorNullParam1:
-		printf("avlTree Error: First parameter provided is NULL(0).\n");
-		break;
+		return (u8*)"avlTree Error: First parameter provided is NULL(0).\n";
 		case avlTree_errorNullParam2:
-		printf("avlTree Error: Second parameter provided is NULL(0).\n");
-		break;
+		return (u8*)"avlTree Error: Second parameter provided is NULL(0).\n";
 		case avlTree_errorNullParam3:
-		printf("avlTree Error: Third parameter provided is NULL(0).\n");
-		break;
+		return (u8*)"avlTree Error: Third parameter provided is NULL(0).\n";
 		case avlTree_errorTreeIsEmpty:
-		printf("avlTree Error: tree is empty because it is NULL(0).\n");
-		break;
+		return (u8*)"avlTree Error: tree is empty because it is NULL(0).\n";
 		case avlTree_errorMallocFailed:
-		printf("avlTree Error: Malloc was called and returned NULL(0).\n");
-		break;
+		return (u8*)"avlTree Error: Malloc was called and returned NULL(0).\n";
 		case avlTree_OK:
-		printf("avlTree OK: Everything worked as intended.\n");
-		break;
+		return (u8*)"avlTree OK: Everything worked as intended.\n";
 		case avlTree_nothingFound:
-		printf("avlTree Status: Nothing Found. Search for node terminated"
-			   " with nothing in delete or insert.\n");
-		break;
+		return (u8*)"avlTree Status: Nothing Found. Search for node terminated"
+			   " with nothing in find or delete.\n";
 		case avlTree_updatedValOfExistingKey:
-		printf("avlTree Status: Existing key found and value updated.\n");
-		break;
+		return (u8*)"avlTree Status: Existing key found and value updated.\n";
 		default:
-		printf("avlTree Default: This value is not enumerated."
-		       " Debug has no information for you.\n");
+		return (u8*)"avlTree Default: This value is not enumerated."
+		       " Debug has no information for you.\n";
 	}
 }
 #endif

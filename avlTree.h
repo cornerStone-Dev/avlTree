@@ -7,11 +7,7 @@
 /*******************************************************************************
  * Section Interface for Alterations
 *******************************************************************************/
-//#define AVLTREE_TREE_DEBUG
-
-#ifdef AVLTREE_TREE_DEBUG
-#include <stdio.h>
-#endif
+#define AVLTREE_TREE_DEBUG
 
 #ifndef AVLTREE_CUSTOM_ALLOC
 #include <stdlib.h>
@@ -28,9 +24,9 @@ typedef uint64_t AvlValue;
 #endif
 
 #ifdef AVLTREE_STATIC_BUILD
-#define STATIC_BUILD static
+#define AVLTREE_STATIC_BUILD static
 #else
-#define STATIC_BUILD
+#define AVLTREE_STATIC_BUILD
 #endif
 
 /*******************************************************************************
@@ -67,7 +63,7 @@ enum {
  * Return values are of the enumeration in Types
 *******************************************************************************/
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 int32_t
 avlTree_find(
 	StringToValNode *tree,     // pointer to tree
@@ -75,14 +71,14 @@ avlTree_find(
 	StringToValNode **result); // address for search result to be written
 
 // convenience function for using integer keys
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 int32_t
 avlTree_findIntKey(
 	StringToValNode *tree,     // pointer to tree
 	int64_t key,               // signed integer key
 	StringToValNode **result); // address for search result to be written
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 int32_t
 avlTree_insert(
 	StringToValNode **treep, // pointer memory holding address of tree
@@ -91,7 +87,7 @@ avlTree_insert(
 	AvlValue value);         // value to be stored
 
 // convenience function for using integer keys
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 int32_t
 avlTree_insertIntKey(
 	StringToValNode **treep, // pointer memory holding address of tree
@@ -99,7 +95,7 @@ avlTree_insertIntKey(
 	AvlValue value);         // value to be stored
 
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 int32_t
 avlTree_delete(
 	StringToValNode **treep, // pointer memory holding address of tree
@@ -107,7 +103,7 @@ avlTree_delete(
 	AvlValue *value);        // OPTIONAL: pointer to memory for value to written
 
 // convenience function for using integer keys
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 int32_t
 avlTree_deleteIntKey(
 	StringToValNode **treep, // pointer memory holding address of tree
@@ -119,36 +115,36 @@ avlTree_deleteIntKey(
 *******************************************************************************/
 
 #ifdef AVLTREE_TREE_DEBUG
-STATIC_BUILD
-void
-avlTree_debugPrintf(int32_t mainAPIReturnValue);
+AVLTREE_STATIC_BUILD
+uint8_t *
+avlTree_debugString(int32_t mainAPIReturnValue);
 #endif
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 StringToValNode*
 avlTree_max(StringToValNode *tree);
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 StringToValNode*
 avlTree_min(StringToValNode *tree);
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 uint32_t
 avlTree_count(StringToValNode *tree);
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 uint32_t
 avlTree_maxDepth(StringToValNode *tree);
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 void
 avlTree_freeAll(StringToValNode** treep);
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 uint32_t
 avlTree_s64toString(int64_t input, uint8_t *output);
 
-STATIC_BUILD
+AVLTREE_STATIC_BUILD
 int64_t 
 avlTree_stringTos64(uint8_t *string);
 
